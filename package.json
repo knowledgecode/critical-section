@@ -1,0 +1,56 @@
+{
+  "name": "critical-section",
+  "version": "0.1.0",
+  "description": "A mutual exclusion library using objects as lock identifiers",
+  "keywords": [
+    "critical-section",
+    "mutex",
+    "synchronization",
+    "concurrency",
+    "lock",
+    "mutual-exclusion"
+  ],
+  "homepage": "https://github.com/knowledgecode/critical-section#readme",
+  "bugs": {
+    "url": "https://github.com/knowledgecode/critical-section/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/knowledgecode/critical-section.git"
+  },
+  "license": "MIT",
+  "author": "KNOWLEDGECODE",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist/**/*"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "rollup -c && tsc",
+    "build-watch": "concurrently --kill-others \"rollup -c --watch\" \"tsc --watch\"",
+    "lint": "eslint",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@rollup/plugin-terser": "^0.4.4",
+    "concurrently": "^9.2.0",
+    "eslint": "^9.33.0",
+    "rollup": "^4.46.2",
+    "rollup-plugin-esbuild": "^6.2.1",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.39.1",
+    "vitest": "^3.2.4"
+  }
+}
