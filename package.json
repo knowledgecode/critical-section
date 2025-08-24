@@ -1,6 +1,6 @@
 {
   "name": "critical-section",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A mutual exclusion library using objects as lock identifiers",
   "keywords": [
     "critical-section",
@@ -37,20 +37,19 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "rollup -c && tsc",
-    "build-watch": "concurrently --kill-others \"rollup -c --watch\" \"tsc --watch\"",
+    "build": "rollup -c",
+    "build-watch": "rollup -c -w",
     "lint": "eslint",
     "prepublishOnly": "npm run build",
     "test": "vitest run"
   },
   "devDependencies": {
     "@rollup/plugin-terser": "^0.4.4",
-    "concurrently": "^9.2.0",
-    "eslint": "^9.33.0",
-    "rollup": "^4.46.2",
+    "eslint": "^9.34.0",
+    "rollup": "^4.48.0",
+    "rollup-plugin-dts": "^6.2.3",
     "rollup-plugin-esbuild": "^6.2.1",
-    "typescript": "^5.9.2",
-    "typescript-eslint": "^8.39.1",
+    "typescript-eslint": "^8.40.0",
     "vitest": "^3.2.4"
   }
 }
