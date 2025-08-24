@@ -1,5 +1,6 @@
 import esbuild from 'rollup-plugin-esbuild';
 import terser from '@rollup/plugin-terser';
+import { dts } from 'rollup-plugin-dts';
 
 export default () => {
   return [
@@ -12,6 +13,15 @@ export default () => {
       plugins: [
         esbuild({ minify: false, target: 'es2020' }),
         terser()
+      ]
+    },
+    {
+      input: 'src/index.ts',
+      output: [
+        { dir: 'dist' }
+      ],
+      plugins: [
+        dts()
       ]
     }
   ];
