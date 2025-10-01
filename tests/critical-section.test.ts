@@ -143,6 +143,120 @@ describe('CriticalSection', () => {
     });
   });
 
+  describe('waitLeave()', () => {
+    it('should return true immediately for unlocked object', async () => {
+      const result = await criticalSection.waitLeave(testObj1);
+      expect(result).toBe(true);
+    });
+
+    it('should wait for object to be released without locking it', async () => {
+      // Lock the object
+      await expectSuccessfulEntry(criticalSection, testObj1);
+
+      // Start waiting for release
+      const waitPromise = criticalSection.waitLeave(testObj1);
+      let waitResolved = false;
+      waitPromise.then((result) => {
+        expect(result).toBe(true);
+        waitResolved = true;
+      });
+
+      // Wait should not resolve immediately
+      await delay(10);
+      expect(waitResolved).toBe(false);
+
+      // Release the lock
+      criticalSection.leave(testObj1);
+
+      // Wait should now resolve
+      await waitPromise;
+      expect(waitResolved).toBe(true);
+
+      // Object should remain unlocked after waitLeave
+      expect(criticalSection.isLocked(testObj1)).toBe(false);
+    });
+
+    it('should timeout and return false when object is not released in time', async () => {
+      // Lock the object
+      await expectSuccessfulEntry(criticalSection, testObj1);
+
+      // Wait with timeout
+      const result = await criticalSection.waitLeave(testObj1, 50);
+      expect(result).toBe(false);
+
+      // Clean up
+      criticalSection.leave(testObj1);
+    });
+
+    it('should succeed if object is released before timeout', async () => {
+      // Lock the object
+      await expectSuccessfulEntry(criticalSection, testObj1);
+
+      // Schedule release after short delay
+      scheduleRelease(criticalSection, testObj1, 30);
+
+      // Wait with longer timeout
+      const result = await criticalSection.waitLeave(testObj1, 100);
+      expect(result).toBe(true);
+    });
+
+    it('should not lock the object after waiting', async () => {
+      // Lock the object
+      await expectSuccessfulEntry(criticalSection, testObj1);
+
+      // Start waiting
+      const waitPromise = criticalSection.waitLeave(testObj1);
+
+      // Release the lock
+      criticalSection.leave(testObj1);
+
+      // Wait for completion
+      await waitPromise;
+
+      // Another thread should be able to tryEnter immediately
+      const result = criticalSection.tryEnter(testObj1);
+      expect(result).toBe(true);
+
+      // Clean up
+      criticalSection.leave(testObj1);
+    });
+  });
+
+  describe('isLocked()', () => {
+    it('should return false for unlocked object', () => {
+      const result = criticalSection.isLocked(testObj1);
+      expect(result).toBe(false);
+    });
+
+    it('should return true for locked object', async () => {
+      await expectSuccessfulEntry(criticalSection, testObj1);
+
+      const result = criticalSection.isLocked(testObj1);
+      expect(result).toBe(true);
+
+      // Clean up
+      criticalSection.leave(testObj1);
+    });
+
+    it('should return false after object is released', async () => {
+      await expectSuccessfulEntry(criticalSection, testObj1);
+      criticalSection.leave(testObj1);
+
+      const result = criticalSection.isLocked(testObj1);
+      expect(result).toBe(false);
+    });
+
+    it('should check different objects independently', async () => {
+      await expectSuccessfulEntry(criticalSection, testObj1);
+
+      expect(criticalSection.isLocked(testObj1)).toBe(true);
+      expect(criticalSection.isLocked(testObj2)).toBe(false);
+
+      // Clean up
+      criticalSection.leave(testObj1);
+    });
+  });
+
   describe('leave()', () => {
     it('should release critical section', async () => {
       await expectSuccessfulEntry(criticalSection, testObj1);
@@ -157,7 +271,7 @@ describe('CriticalSection', () => {
       criticalSection.leave(testObj1);
     });
 
-    it('should not throw error when leaving unoccupied object', () => {
+    it('should not throw error when leaving unlocked object', () => {
       expect(() => criticalSection.leave(testObj1)).not.toThrow();
     });
 

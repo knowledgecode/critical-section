@@ -24,7 +24,7 @@ await criticalSection.enter(window);
 - **🎯 Object-centric design**: Your domain objects become the locks themselves
 - **🧠 Intuitive mental model**: One object = one critical section, naturally aligned with OOP
 - **♻️ Automatic cleanup**: WeakMap prevents memory leaks through garbage collection
-- **⚡ Lightweight**: Just 3 methods - `enter()`, `tryEnter()`, `leave()`
+- **⚡ Lightweight**: Just 5 methods - `enter()`, `tryEnter()`, `waitLeave()`, `isLocked()`, `leave()`
 - **🌐 Universal**: Works in Node.js, browsers, and all modern JavaScript environments
 - **🔒 Type-safe**: Full TypeScript support with strict type checking
 - **📦 Zero dependencies**: No external runtime dependencies
@@ -128,7 +128,7 @@ Attempts to enter a critical section immediately without waiting.
 
 **Returns:**
 
-- `boolean` - `true` if successfully entered, `false` if already occupied
+- `boolean` - `true` if successfully entered, `false` if already locked
 
 **Example:**
 
@@ -139,6 +139,55 @@ if (criticalSection.tryEnter(myResource)) {
 } else {
   // Resource is busy
   console.log('Resource unavailable');
+}
+```
+
+### `criticalSection.waitLeave(obj: object, timeout?: number): Promise<boolean>`
+
+Waits for the critical section to be released without locking it. Unlike `enter()`, this method does not acquire the lock after waiting.
+
+**Parameters:**
+
+- `obj` - Any object to wait for
+- `timeout` (optional) - Maximum time to wait in milliseconds. If not provided, waits indefinitely
+
+**Returns:**
+
+- `Promise<boolean>` - Resolves to `true` when the critical section is released, `false` if timeout occurs
+
+**Example:**
+
+```typescript
+// Wait for resource to become available without locking it
+const released = await criticalSection.waitLeave(myResource, 2000);
+if (released) {
+  // Resource is now available (but not locked by us)
+  console.log('Resource is free');
+} else {
+  // Timeout occurred
+  console.log('Resource still busy after 2 seconds');
+}
+```
+
+### `criticalSection.isLocked(obj: object): boolean`
+
+Checks if the critical section for the specified object is currently locked.
+
+**Parameters:**
+
+- `obj` - The object to check
+
+**Returns:**
+
+- `boolean` - `true` if the critical section is locked, `false` otherwise
+
+**Example:**
+
+```typescript
+if (criticalSection.isLocked(myResource)) {
+  console.log('Resource is currently locked');
+} else {
+  console.log('Resource is available');
 }
 ```
 
@@ -303,6 +352,39 @@ async function printDocument(document: string) {
 printDocument('Report A');
 printDocument('Report B');
 printDocument('Report C');
+```
+
+### Monitoring Resource Availability
+
+```typescript
+const sharedCache = { name: 'user-cache' };
+
+// Wait for cache to be free before doing cleanup
+async function cleanupCache() {
+  console.log('Waiting for cache to be released...');
+
+  // Wait without locking - other operations can still use the cache
+  const released = await criticalSection.waitLeave(sharedCache, 5000);
+
+  if (released) {
+    // Now we can safely check or perform non-critical operations
+    if (!criticalSection.isLocked(sharedCache)) {
+      console.log('Cache is free, starting cleanup...');
+      // Perform cleanup operations
+    }
+  } else {
+    console.log('Cache is still busy, will retry later');
+  }
+}
+
+// Check status without affecting the lock
+function getCacheStatus() {
+  if (criticalSection.isLocked(sharedCache)) {
+    return 'Cache is currently in use';
+  } else {
+    return 'Cache is available';
+  }
+}
 ```
 
 ## How It Works
