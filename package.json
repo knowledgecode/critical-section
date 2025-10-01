@@ -1,6 +1,6 @@
 {
   "name": "critical-section",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A mutual exclusion library using objects as lock identifiers",
   "keywords": [
     "critical-section",
@@ -45,11 +45,11 @@
   },
   "devDependencies": {
     "@rollup/plugin-terser": "^0.4.4",
-    "eslint": "^9.34.0",
-    "rollup": "^4.48.0",
+    "eslint": "^9.36.0",
+    "rollup": "^4.52.3",
     "rollup-plugin-dts": "^6.2.3",
     "rollup-plugin-esbuild": "^6.2.1",
-    "typescript-eslint": "^8.40.0",
+    "typescript-eslint": "^8.45.0",
     "vitest": "^3.2.4"
   }
 }
