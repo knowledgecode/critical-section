@@ -4,23 +4,32 @@
  * SPDX-License-Identifier: MIT
  */
 
-interface Occupation {
+interface Locking {
   promise?: Promise<boolean>;
   resolve?: (value: boolean | PromiseLike<boolean>) => void;
 }
 
-const map = new WeakMap<object, Occupation>();
+const map = new WeakMap<object, Locking>();
 
-const isOccupation = (obj: Occupation | undefined): obj is Required<Occupation> => {
+const isLocking = (obj: Locking | undefined): obj is Required<Locking> => {
   return typeof obj === 'object' && 'promise' in obj && 'resolve' in obj;
 };
 
 export class CriticalSection {
-  private _occupy (obj: object) {
-    const value: Occupation = {};
+  private _lock (obj: object) {
+    const value: Locking = {};
 
     value.promise = new Promise(resolve => (value.resolve = resolve));
     map.set(obj, value);
+  }
+
+  private _wait (cache: Required<Locking>, timeout: number) {
+    const values = [cache.promise];
+
+    if (timeout > 0) {
+      values.push(new Promise<boolean>(resolve => setTimeout(resolve, timeout, false)));
+    }
+    return Promise.race(values);
   }
 
   /**
@@ -32,18 +41,22 @@ export class CriticalSection {
   enter (obj: object, timeout = 0): Promise<boolean> {
     const cache = map.get(obj);
 
-    if (isOccupation(cache)) {
-      if (timeout > 0) {
-        return Promise.race([
-          cache.promise,
-          new Promise<boolean>(resolve => setTimeout(resolve, timeout, false))
-        ])
-          .then(result => result ? this.enter(obj, timeout) : result);
-      }
-      return cache.promise.then(() => this.enter(obj, timeout));
+    if (isLocking(cache)) {
+      return this._wait(cache, timeout).then(result => result ? this.enter(obj, timeout) : result);
     }
-    this._occupy(obj);
+    this._lock(obj);
     return Promise.resolve(true);
+  }
+
+  /**
+   * Waits for the critical section to be released (left) without locking it.
+   * @param obj - The object to wait for
+   * @param timeout - Optional timeout in milliseconds (default: 0)
+   * @returns A Promise that resolves to true when released, false if timeout occurs
+   */
+  waitLeave (obj: object, timeout = 0): Promise<boolean> {
+    const cache = map.get(obj);
+    return isLocking(cache) ? this._wait(cache, timeout) : Promise.resolve(true);
   }
 
   /**
@@ -55,8 +68,17 @@ export class CriticalSection {
     if (map.has(obj)) {
       return false;
     }
-    this._occupy(obj);
+    this._lock(obj);
     return true;
+  }
+
+  /**
+   * Checks if the critical section for the specified object is currently locked.
+   * @param obj - The object to check
+   * @returns true if the critical section is locked; otherwise, false.
+   */
+  isLocked (obj: object) {
+    return map.has(obj);
   }
 
   /**
